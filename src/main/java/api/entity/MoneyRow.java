@@ -1,10 +1,10 @@
 package api.entity;
 
 /**
- *
- * @param market
- * @param currency
- * @param balance
+ * Денежная позиция.
+ * @param market - рынок. Тип Market;
+ * @param currency - код валюты;
+ * @param balance - текущая позиция.
  */
 public record MoneyRow(Market market, String currency, double balance) {
 }

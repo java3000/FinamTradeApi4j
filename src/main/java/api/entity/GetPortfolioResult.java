@@ -3,14 +3,20 @@ package api.entity;
 import java.util.List;
 
 /**
- *
- * @param clientId
- * @param content
- * @param equity
- * @param balance
- * @param positions
- * @param currencies
- * @param money
+ * Результат GetPortfolioRequest.
+ * @param clientId - торговый код клиента;
+ * @param content - наполнение портфеля;
+ * @param equity - текущая оценка портфеля;
+ * @param balance - входящая оценка стоимости портфеля;
+ * @param positions - позиции портфеля.
+ *                  Массив объектов типа PositionRow.
+ *                  Запрашиваются выставлением флага includePositions равным true;
+ * @param currencies - валюта портфеля.
+ *                   Массив объектов типа CurrencyRow.
+ *                   Запрашивается выставлением флага includeCurrencies равным true;
+ * @param money - денежные позиции.
+ *              Массив объектов типа MoneyRow.
+ *              Запрашивается выставлением флага includeMoney равным true.
  */
 public record GetPortfolioResult(String clientId,
                                  PortfolioContent content,

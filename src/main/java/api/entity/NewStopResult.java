@@ -1,11 +1,11 @@
 package api.entity;
 
 /**
- *
- * @param clientId
- * @param stopId
- * @param securityCode
- * @param securityBoard
+ * Результат выставления стоп заявки.
+ * @param clientId Идентификатор торгового счёта.
+ * @param stopId Идентификатор стоп заявки.
+ * @param securityCode Тикер инструмента.
+ * @param securityBoard Режим торгов.
  */
 public record NewStopResult(String clientId,
                             int stopId,

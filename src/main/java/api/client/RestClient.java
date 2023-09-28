@@ -1,28 +1,16 @@
 package api.client;
 
-import kong.unirest.Unirest;
 import api.entity.*;
+import kong.unirest.Unirest;
 
 import java.util.List;
 
 public class RestClient extends BaseClient {
 
-    //todo: make all paths constants
-    public static final String CHECK_TOKENS_PATH = "/public/api/v1/access-tokens/check";
-    public static final String GET_DAY_CANDLES_PATH = "/public/api/v1/day-candles";
-    public static final String GET_INTRADAY_CANDLES_PATH = "/public/api/v1/intraday-candles";
-    public static final String ORDERS_PATH = "/public/api/v1/orders";
-    public static final String PORTFOLIO_PATH = "/public/api/v1/portfolio";
-    public static final String SECURITIES_PATH = "/public/api/v1/securities";
-    public static final String STOPS_PATH = "/public/api/v1/stops";
-
-    //X-Api-Key header may be
-
-
     public RestClient() {
         if (!getSheme().isEmpty() && !getUrl().isEmpty())
             Unirest.config().defaultBaseUrl(getSheme() + "://" + getUrl());
-        else Unirest.config().defaultBaseUrl("https://trade-api.finam.ru");
+        else Unirest.config().defaultBaseUrl(FINAM_API_DEFAULT_URL);
     }
 
     public RestClient(String sheme, String host) {
@@ -41,9 +29,14 @@ public class RestClient extends BaseClient {
         }
     }
 
+    /**
+     * Проверка токена
+     *
+     * @return числовой идентификатор
+     */
     public long checkToken() {
         IdResultWebResponse response = Unirest.get("{path}")
-                .header("Authorization", "Bearer " + getToken())
+                .header("X-Api-Key", getToken())
                 .routeParam("path", CHECK_TOKENS_PATH)
                 .asObject(IdResultWebResponse.class)
                 .getBody();
@@ -60,26 +53,40 @@ public class RestClient extends BaseClient {
     }
 
     //todo: two funcs below are the same on 99% ...combine?
+    //todo: add to errors TOO_MANY_REQUESTS(429)
+    //todo: what is /subscriptions path ?????
+    //todo: x-api-key or "Authorization: Bearer <токен_доступа>." ????
+    //todo: STOPS_PATH or "стоп-заявках GET /api/v1/stop-orders по счетам;" ?????
+    //todo: WHERE is it: "или в сообщении OrderEvent от сервиса событий (EventResponse.event.order)." ????
 
+    /**
+     *
+     * @param securityBoard Режим торгов.
+     * @param securityCode Тикер инструмента.
+     * @param timeFrame Временной интервал. Возможные значения: D1 (день), W1 (неделя)
+     * @param intervalFrom Дата начала. Дата (по времени биржи). "2023-05-25"
+     * @param intervalTo Дата окончания. Дата (по времени биржи). "2023-05-25"
+     * @param intervalCount Количество свечей.
+     * @return Возвращает дневные свечи
+     */
     public DayCandle[] getDayCandles(String securityBoard,
                                      String securityCode,
-                                     String timeFrame, //Available values : D1, W1
+                                     String timeFrame,
                                      String intervalFrom,
                                      String intervalTo,
                                      int intervalCount) {
 
-        if (securityBoard.isEmpty() | securityCode.isEmpty() | timeFrame.isEmpty() |
-        intervalFrom.isEmpty() | intervalTo.isEmpty())
+        if (securityBoard.isEmpty() | securityCode.isEmpty() | timeFrame.isEmpty())
             throw new IllegalArgumentException("parameters must be set");
 
         GetDayCandlesResultWebResponse response = Unirest.get("{path}")
-                .header("Authorization", "Bearer " + getToken())
+                .header("X-Api-Key", getToken())
                 .routeParam("path", GET_DAY_CANDLES_PATH)
                 .queryString("SecurityBoard", securityBoard)
                 .queryString("SecurityCode", securityCode)
                 .queryString("TimeFrame", timeFrame)
                 .queryString("Interval.From", intervalFrom)
-                .queryString("Interval.To", securityBoard)
+                .queryString("Interval.To", intervalTo)
                 .queryString("Interval.Count", intervalCount)
                 .asObject(GetDayCandlesResultWebResponse.class)
                 .getBody();
@@ -95,25 +102,34 @@ public class RestClient extends BaseClient {
     }
 
 
+    /**
+     *
+     * @param securityBoard Режим торгов.
+     * @param securityCode Тикер инструмента.
+     * @param timeFrame Временной интервал. M1, M5, M15, H1
+     * @param intervalFrom Дата начала. Время, когда заявка была отменена на сервере. В UTC. "2023-09-28T05:48:51Z"
+     * @param intervalTo Дата окончания.  Время, когда заявка была отменена на сервере. В UTC. "2023-09-28T05:48:51Z"
+     * @param intervalCount Количество свечей.
+     * @return Возвращает внутридневные свечи.
+     */
     public IntradayCandle[] getIntradayCandles(String securityBoard,
                                                String securityCode,
-                                               String timeFrame, //Available values : M1, M5, M15, H1
+                                               String timeFrame,
                                                String intervalFrom,
                                                String intervalTo,
                                                int intervalCount) {
 
-        if (securityBoard.isEmpty() | securityCode.isEmpty() | timeFrame.isEmpty() |
-                intervalFrom.isEmpty() | intervalTo.isEmpty())
+        if (securityBoard.isEmpty() | securityCode.isEmpty() | timeFrame.isEmpty())
             throw new IllegalArgumentException("parameters must be set");
 
         GetIntradayCandlesResultWebResponse response = Unirest.get("{path}")
-                .header("Authorization", "Bearer " + getToken())
+                .header("X-Api-Key", getToken())
                 .routeParam("path", GET_INTRADAY_CANDLES_PATH)
                 .queryString("SecurityBoard", securityBoard)
                 .queryString("SecurityCode", securityCode)
                 .queryString("TimeFrame", timeFrame)
                 .queryString("Interval.From", intervalFrom)
-                .queryString("Interval.To", securityBoard)
+                .queryString("Interval.To", intervalTo)
                 .queryString("Interval.Count", intervalCount)
                 .asObject(GetIntradayCandlesResultWebResponse.class)
                 .getBody();
@@ -128,13 +144,23 @@ public class RestClient extends BaseClient {
         }
     }
 
+    /**
+     * Создать новую заявку.
+     * На обработку нового поручения по размещению заявки в биржевой стакан
+     * требуется некоторое время, поэтому этот метод возвращает структуру с
+     * transaction_id, которая может быть использована для поиска соответствующей
+     * заявки через GetOrdersRequest или в сообщении OrderEvent от сервиса событий
+     * (EventResponse.event.order).
+     * @param order @href NewOrderRequest
+     * @return В случае успешного выполнения запроса сервис вернет transactionId выставленной заявки.
+     */
     public int setOrder(NewOrderRequest order) {
 
         if (order == null)
             throw new IllegalArgumentException("order is null");
 
         NewOrderResultWebResponse response = Unirest.post("{path}")
-                .header("Authorization", "Bearer " + getToken())
+                .header("X-Api-Key", getToken())
                 .header("Content-Type", "application/json")
                 .routeParam("path", ORDERS_PATH)
                 .body(order)
@@ -152,13 +178,20 @@ public class RestClient extends BaseClient {
 
     }
 
+    /**
+     * Отменяет заявку.
+     * @param clientId - Идентификатор торгового счёта.
+     * @param transactionId - Идентификатор транзакции,
+     * который может быть использован для отмены заявки или определения номера заявки в сервисе событий.
+     * @return
+     */
     public int cancelOrder(String clientId, int transactionId) {
 
         if (clientId.isEmpty() | transactionId == 0)
             throw new IllegalArgumentException("arguments musr be set");
 
         CancelOrderResultWebResponse response = Unirest.delete("{path}")
-                .header("Authorization", "Bearer " + getToken())
+                .header("X-Api-Key", getToken())
                 .routeParam("path", ORDERS_PATH)
                 .queryString("ClientId", clientId)
                 .queryString("TransactionId", transactionId)
@@ -175,6 +208,14 @@ public class RestClient extends BaseClient {
         }
     }
 
+    /**
+     * Возвращает список заявок.
+     * @param clientId - торговый код клиента (обязательный);
+     * @param includeMatched - вернуть исполненные заявки;
+     * @param includeCanceled- вернуть отмененные заявки;
+     * @param includeActive - вернуть активные заявки.
+     * @return В случае успешного выполнения запроса сервис вернет список заявок.
+     */
     public List<Order> getOrderList(String clientId,
                                     boolean includeMatched,
                                     boolean includeCanceled,
@@ -184,7 +225,7 @@ public class RestClient extends BaseClient {
             throw new IllegalArgumentException("client ID not set or all bool parameters are incorrect");
 
         GetOrdersResultWebResponse response = Unirest.get("{path}")
-                .header("Authorization", "Bearer " + getToken())
+                .header("X-Api-Key", getToken())
                 .routeParam("path", ORDERS_PATH)
                 .queryString("ClientId", clientId)
                 .queryString("IncludeMatched", includeMatched)
@@ -203,6 +244,15 @@ public class RestClient extends BaseClient {
         }
     }
 
+    /**
+     * Возвращает портфель.
+     * @param clientId - торговый код клиента (обязательный);
+     * @param includeCurrencies - запросить информацию по валютам портфеля;
+     * @param includeMoney - запросить информацию по денежным позициям портфеля;
+     * @param includePositions - запросить информацию по позициям портфеля;
+     * @param includeMaxBuySell - запросить информацию о максимальном доступном объеме на покупку/продажу.
+     * @return В случае успешного выполнения запроса сервис вернет портфель клиента.
+     */
     public GetPortfolioResult getPortfolio(String clientId,
                                            boolean includeCurrencies,
                                            boolean includeMoney,
@@ -213,7 +263,7 @@ public class RestClient extends BaseClient {
             throw new IllegalArgumentException("client ID not set or all bool parameters are incorrect");
 
         GetPortfolioResultWebResponse response = Unirest.get("{path}")
-                .header("Authorization", "Bearer " + getToken())
+                .header("X-Api-Key", getToken())
                 .routeParam("path", PORTFOLIO_PATH)
                 .queryString("ClientId", clientId)
                 .queryString("Content.IncludeCurrencies", includeCurrencies)
@@ -234,6 +284,11 @@ public class RestClient extends BaseClient {
 
     }
 
+    /**
+     * Справочник инструментов.
+     * @param request The request received from the client.
+     * @return
+     */
     //todo: what is the request is????
     public List<Security> getSecurities(GetSecuritiesRequest request) {
 
@@ -241,7 +296,7 @@ public class RestClient extends BaseClient {
             throw new IllegalArgumentException("order is null");
 
         GetSecuritiesResultWebResponse response = Unirest.get("{path}")
-                .header("Authorization", "Bearer " + getToken())
+                .header("X-Api-Key", getToken())
                 .routeParam("path", SECURITIES_PATH)
                 .queryString("request", request)
                 .asObject(GetSecuritiesResultWebResponse.class)
@@ -258,13 +313,18 @@ public class RestClient extends BaseClient {
 
     }
 
+    /**
+     * Выставляет стоп-заявку.
+     * @param request The request received from the client.
+     * @return
+     */
     public NewStopResult setStopOrder(NewStopRequest request) {
 
         if (request == null)
             throw new IllegalArgumentException("Stop order is null");
 
         NewStopResultWebResponse response = Unirest.post("{path}")
-                .header("Authorization", "Bearer " + getToken())
+                .header("X-Api-Key", getToken())
                 .routeParam("path", STOPS_PATH)
                 .body(request)
                 .asObject(NewStopResultWebResponse.class)
@@ -281,6 +341,14 @@ public class RestClient extends BaseClient {
 
     }
 
+    /**
+     * Возвращает список стоп-заявок.
+     * @param clientId - торговый код клиента (обязательный);
+     * @param includeExecuted - вернуть исполненные заявки;
+     * @param includeCanceled - вернуть отмененные заявки;
+     * @param includeActive - вернуть активные заявки.
+     * @return В случае успешного выполнения запроса сервис вернет список стоп-заявок.
+     */
     public List<Stop> getStopOrdersList(String clientId,
                                         boolean includeExecuted,
                                         boolean includeCanceled,
@@ -290,7 +358,7 @@ public class RestClient extends BaseClient {
             throw new IllegalArgumentException("order must be set");
 
         GetStopsResultWebResponse response = Unirest.get("{path}")
-                .header("Authorization", "Bearer " + getToken())
+                .header("X-Api-Key", getToken())
                 .routeParam("path", STOPS_PATH)
                 .queryString("ClientId", clientId)
                 .queryString("IncludeExecuted", includeExecuted)
@@ -309,13 +377,19 @@ public class RestClient extends BaseClient {
         }
     }
 
+    /**
+     * Снимает стоп-заявку.
+     * @param clientId - торговый код клиента;
+     * @param stopId - идентификатор отменяемой стоп-заявки.
+     * @return идентификатор отменяемой стоп-заявки
+     */
     public int deleteStop(String clientId, int stopId) {
 
         if (clientId.isEmpty() || stopId == 0)
             throw new IllegalArgumentException("arguments must be set");
 
         CancelStopResultWebResponse response = Unirest.delete("{path}")
-                .header("Authorization", "Bearer " + getToken())
+                .header("X-Api-Key", getToken())
                 .routeParam("path", STOPS_PATH)
                 .queryString("ClientId", clientId)
                 .queryString("StopId", stopId)

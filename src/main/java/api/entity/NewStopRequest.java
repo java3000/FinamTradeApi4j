@@ -2,15 +2,16 @@ package api.entity;
 
 /**
  *
- * @param clientId
- * @param securityBoard
- * @param securityCode
- * @param buySell
- * @param stopLoss
- * @param takeProfit
- * @param expirationDate
- * @param linkOrder
- * @param validBefore
+ * @param clientId - торговый код клиента;
+ * @param securityBoard - основной режим торгов инструмента;
+ * @param securityCode - код инструмента;
+ * @param buySell - тип BuySell;
+ * @param stopLoss - информация о stop-loss. Тип StopLoss;
+ * @param takeProfit - информация о take-profit. Тип TakeProfit;
+ * @param expirationDate - дата экспирации заявки FORTS;
+ * @param linkOrder - биржевой номер связанной (активной) заявки;
+ * @param validBefore - условие по времени действия заявки. Тип OrderValidBefore;
+ * @param status  - текущий статус стоп-заявки. Тип StopStatus.
  */
 public record NewStopRequest(String clientId,
                              String securityBoard,
@@ -20,5 +21,6 @@ public record NewStopRequest(String clientId,
                              TakeProfit takeProfit,
                              String expirationDate,
                              long linkOrder,
-                             OrderValidBefore validBefore) {
+                             OrderValidBefore validBefore,
+                             StopStatus status) {
 }
