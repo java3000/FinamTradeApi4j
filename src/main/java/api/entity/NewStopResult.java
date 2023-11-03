@@ -10,5 +10,5 @@ package api.entity;
 public record NewStopResult(String clientId,
                             int stopId,
                             String securityCode,
-                            String securityBoard) {
+                            String securityBoard) implements Result<NewStopResult> {
 }

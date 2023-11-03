@@ -7,5 +7,5 @@ import java.util.List;
  * @param clientId Идентификатор торгового счёта.
  * @param stops Список стоп-заявок.
  */
-public record GetStopsResult(String clientId, List<Stop> stops) {
+public record GetStopsResult(String clientId, List<Stop> stops) implements Result<GetStopsResult> {
 }

@@ -7,5 +7,5 @@ import java.util.List;
  * @param clientId Идентификатор торгового счёта.
  * @param orders Список заявок.
  */
-public record GetOrdersResult(String clientId, List<Order> orders) {
+public record GetOrdersResult(String clientId, List<Order> orders) implements Result<GetOrdersResult> {
 }

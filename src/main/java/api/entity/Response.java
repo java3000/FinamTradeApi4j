@@ -1,4 +1,8 @@
 package api.entity;
 
-public class Response {
+public interface Response<T> {
+    WebError error();
+
+    Result data();
+
 }

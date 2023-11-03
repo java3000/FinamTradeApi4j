@@ -1,0 +1,1387 @@
+syntax = "proto3";
+
+package proto.tradeapi.v1;
+
+option java_package = "api.client";
+option java_generic_services = true;
+option optimize_for = SPEED;
+
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/wrappers.proto";
+import "google/type/date.proto";
+
+service Candles {
+  // Returns the list of day candles.
+  // Возвращает дневные свечи.
+  rpc GetDayCandles(proto.tradeapi.v1.GetDayCandlesRequest) returns (proto.tradeapi.v1.GetDayCandlesResult);
+
+  // Returns the list of intraday candles.
+  // Возвращает внутридневные свечи.
+  rpc GetIntradayCandles(proto.tradeapi.v1.GetIntradayCandlesRequest) returns (proto.tradeapi.v1.GetIntradayCandlesResult);
+}
+
+service Events {
+  // Event Service sends events after explicit subscription.
+  // Сервис событий. Отправляет события после вызова соответствующих методов подписки.
+  rpc GetEvents (stream proto.tradeapi.v1.SubscriptionRequest) returns (stream proto.tradeapi.v1.Event);
+}
+
+service Orders {
+  // Creates new order.
+  // Order placement in OrderBook takes some time due to processing speed,
+  // that is why this method returns transaction_id, which can be used
+  // to find corresponding order in GetOrdersRequest or in OrderEvent message
+  // of Events service (EventResponse.event.order).
+  // Создать новую заявку.
+  // На обработку нового поручения по размещению заявки в биржевой стакан
+  // требуется некоторое время, поэтому этот метод возвращает структуру с
+  // transaction_id, которая может быть использована для поиска соответствующей
+  // заявки через GetOrdersRequest или в сообщении OrderEvent от сервиса событий
+  // (EventResponse.event.order).
+  rpc NewOrder(proto.tradeapi.v1.NewOrderRequest) returns (proto.tradeapi.v1.NewOrderResult);
+  // Cancels order.
+  // Отменяет заявку.
+  rpc CancelOrder(proto.tradeapi.v1.CancelOrderRequest) returns (proto.tradeapi.v1.CancelOrderResult);
+  // Returns the list of orders.
+  // Возвращает список заявок.
+  rpc GetOrders(proto.tradeapi.v1.GetOrdersRequest) returns (proto.tradeapi.v1.GetOrdersResult);
+}
+
+service Portfolios {
+  // Returns portfolio.
+  // Возвращает портфель.
+  rpc GetPortfolio(proto.tradeapi.v1.GetPortfolioRequest) returns (proto.tradeapi.v1.GetPortfolioResult);
+}
+
+service Securities {
+  // Securities table.
+  // Справочник инструментов.
+  rpc GetSecurities(GetSecuritiesRequest) returns (GetSecuritiesResult);
+}
+
+service Stops {
+  // Returns the list of Stop Orders.
+  // Возвращает список стоп-заявок.
+  rpc GetStops(proto.tradeapi.v1.GetStopsRequest) returns (proto.tradeapi.v1.GetStopsResult);
+  // Cancels Stop Order.
+  // Снимает стоп-заявку.
+  rpc CancelStop(proto.tradeapi.v1.CancelStopRequest) returns (proto.tradeapi.v1.CancelStopResult);
+  // Creates new Stop Order.
+  // Выставляет стоп-заявку.
+  rpc NewStop(proto.tradeapi.v1.NewStopRequest) returns (proto.tradeapi.v1.NewStopResult);
+}
+
+
+// Stop order status.
+// Состояние заявки.
+enum StopStatus {
+  // Value is not specified. Do not use.
+  // Значение не указано. Не использовать.
+  STOP_STATUS_UNSPECIFIED = 0;
+  // Order is not in OrderBook.
+  // Заявка не выставлена.
+  STOP_STATUS_NONE = 1;
+  // Order is in OrderBook.
+  // Заявка выставлена.
+  STOP_STATUS_ACTIVE = 2;
+  // Order is cancelled.
+  // Заявка отменена.
+  STOP_STATUS_CANCELLED = 3;
+  // Order is executed.
+  // Заявка выполнена.
+  STOP_STATUS_EXECUTED = 4;
+}
+
+// Stop Order.
+// Стоп-заявка.
+message Stop {
+  // Stop Order Id.
+  // Идентификатор стоп-заявки.
+  int32 stop_id = 1;
+  // Security Code.
+  // Тикер инструмента.
+  string security_code = 2;
+  // Security Board.
+  // Основной режим торгов инструмента.
+  string security_board = 3;
+  // Market.
+  // Рынок.
+  proto.tradeapi.v1.Market market = 4;
+  // Trade Account ID.
+  // Идентификатор торгового счёта.
+  string client_id = 5;
+  // Transaction direction.
+  // Направление сделки.
+  BuySell buy_sell = 6;
+  // Expiration date for FORTS order.
+  // Дата экспирации заявки FORTS.
+  google.protobuf.Timestamp expiration_date = 7;
+  // Linked order ID.
+  // Биржевой номер связанной (активной) заявки.
+  int64 link_order = 8;
+  // Order lifetime.
+  // Время действия заявки.
+  proto.tradeapi.v1.OrderValidBefore valid_before = 9;
+  // Order status.
+  // Состояние заявки.
+  StopStatus status = 10;
+  // Rejection reason or conditional order resolution.
+  // Причина отказа или вердикт по условной заявке.
+  string message = 11;
+  // Order No.
+  // Номер заявки, полученной в результате исполнения стопа.
+  int64 order_no = 12;
+  // Trade No.
+  // Номер сделки, которая привела к исполнению стопа.
+  int64 trade_no = 13;
+  // Time of order registration on the server in UTC.
+  // Время, когда заявка была зарегистрирована на сервере. В UTC.
+  google.protobuf.Timestamp accepted_at = 14;
+  // Time of order canceled on the server in UTC.
+  // Время, когда заявка была отменена на сервере. В UTC.
+  google.protobuf.Timestamp canceled_at = 15;
+  // Price currency.
+  // Валюта цены.
+  string currency = 16;
+  // Take profit: local extremum.
+  // Тейк профит: текущий локальный экстремум.
+  double take_profit_extremum = 17;
+  // Take profit: correction level.
+  // Тейк профит: текущий уровень коррекции.
+  double take_profit_level = 18;
+  // Stop loss.
+  // Стоп лосс.
+  StopLoss stop_loss = 19;
+  // Take profit.
+  // Тейк профит.
+  TakeProfit take_profit = 20;
+}
+
+// StopLoss order.
+// Стоп лосс заявка.
+message StopLoss {
+  // Activation price.
+  // Цена активации.
+  double activation_price = 1;
+  // Price.
+  // Цена заявки.
+  double price = 2;
+  // Market price.
+  // По рынку.
+  bool market_price = 3;
+  // Quantity.
+  // Количество.
+  StopQuantity quantity = 4;
+  // Time, seconds.
+  // Защитное время, сек.
+  int32 time = 5;
+  // Use credit.
+  // Использовать кредит.
+  bool use_credit = 6;
+}
+
+// TakeProfit order.
+// Тейк профит заявка.
+message TakeProfit {
+  // Activation price.
+  // Цена активации.
+  double activation_price = 1;
+  // Correction.
+  // Коррекция.
+  StopPrice correction_price = 2;
+  // Spread price.
+  // Защитный спрэд.
+  StopPrice spread_price = 3;
+  // Market price.
+  // По рынку.
+  bool market_price = 4;
+  // Quantity.
+  // Количество.
+  StopQuantity quantity = 5;
+  // Time, seconds.
+  // Защитное время, сек.
+  int32 time = 6;
+  // Use credit.
+  // Использовать кредит.
+  bool use_credit = 7;
+}
+
+// Stop quantity.
+// Объем стоп-заявки.
+message StopQuantity {
+  // Value.
+  // Значение объема.
+  double value = 1;
+  // Units.
+  // Единицы объема.
+  StopQuantityUnits units = 2;
+}
+
+// Stop quantity units.
+// Единицы объема стоп-заявки.
+enum StopQuantityUnits {
+  // Value is not specified. Do not use.
+  // Значение не указано. Не использовать.
+  STOP_QUANTITY_UNITS_UNSPECIFIED = 0;
+  // Percent.
+  // Значение а процентах.
+  STOP_QUANTITY_UNITS_PERCENT = 1;
+  // Lots.
+  // Значение в лотах.
+  STOP_QUANTITY_UNITS_LOTS = 2;
+}
+
+// Stop price.
+// Цена стоп-заявки.
+message StopPrice {
+  // Value.
+  // Значение цены.
+  double value = 1;
+  // Units.
+  // Единицы цены.
+  StopPriceUnits units = 2;
+}
+
+// Stop price units.
+// Единицы цены стоп-заявки.
+enum StopPriceUnits {
+  // Value is not specified. Do not use.
+  // Значение не указано. Не использовать.
+  STOP_PRICE_UNITS_UNSPECIFIED = 0;
+  // Percent.
+  // Значение а процентах.
+  STOP_PRICE_UNITS_PERCENT = 1;
+  // Lots.
+  // Значение в единицах цены.
+  STOP_PRICE_UNITS_PIPS = 2;
+}
+
+// Request for Stop Order cancellation.
+// Запрос на снятие стоп-заявки.
+message CancelStopRequest {
+  // Trade Account ID.
+  // Идентификатор торгового счёта.
+  string client_id = 1;
+  // Stop Order Id.
+  // Идентификатор стоп-заявки.
+  int32 stop_id = 2;
+}
+
+// Result of Stop Order cancellation.
+// Результат отмены стоп-заявки.
+message CancelStopResult {
+  // Trade Account ID.
+  // Идентификатор торгового счёта.
+  string client_id = 1;
+  // Stop Order Id.
+  // Идентификатор стоп-заявки.
+  int32 stop_id = 2;
+}
+
+// Request for the list of Stop Orders.
+// Запрос стоп-заявок.
+message GetStopsRequest {
+  // Trade Account ID.
+  // Идентификатор торгового счёта.
+  string client_id = 1;
+  // Include executed stops in response.
+  // Вернуть исполненные стоп-заявки.
+  bool include_executed = 2;
+  // Include canceled stops in response.
+  // Вернуть отмененные стоп-заявки.
+  bool include_canceled = 3;
+  // Include active stops in response.
+  // Вернуть активные стоп-заявки.
+  bool include_active = 4;
+}
+
+// Result of Stop Orders request.
+// Результат запроса стоп-заявок.
+message GetStopsResult {
+  // Trade Account ID.
+  // Идентификатор торгового счёта.
+  string client_id = 1;
+  // Stop Orders List.
+  // Список стоп-заявок.
+  repeated Stop stops = 2;
+}
+
+// New Stop Order request.
+// Запрос на выставление стоп заявки.
+message NewStopRequest {
+  // Trade Account ID.
+  // Идентификатор торгового счёта.
+  string client_id = 1;
+  // Trading Board.
+  // Режим торгов.
+  string security_board = 2;
+  // Security Code.
+  // Тикер инструмента.
+  string security_code = 3;
+  // Transaction direction.
+  // Направление сделки.
+  BuySell buy_sell = 4;
+  // Stop loss.
+  // Стоп лосс.
+  StopLoss stop_loss = 5;
+  // Take profit.
+  // Тейк профит.
+  TakeProfit take_profit = 6;
+  // Expiration date for FORTS order.
+  // Дата экспирации заявки FORTS.
+  google.protobuf.Timestamp expiration_date = 7;
+  // Linked order ID.
+  // Биржевой номер связанной (активной) заявки.
+  int64 link_order = 8;
+  // Order lifetime.
+  // Время действия заявки.
+  proto.tradeapi.v1.OrderValidBefore valid_before = 9;
+}
+
+// Result of new Stop Order request.
+// Результат выставления стоп заявки.
+message NewStopResult {
+  // Trade Account Id.
+  // Идентификатор торгового счёта.
+  string client_id = 1;
+  // Stop Order Id.
+  // Идентификатор стоп заявки.
+  int32 stop_id = 2;
+  // Security Code.
+  // Тикер инструмента.
+  string security_code = 3;
+  // Trading Board.
+  // Режим торгов.
+  string security_board = 4;
+}
+
+// Securities list request.
+// Запрос списка инструментов.
+message GetSecuritiesRequest {
+}
+
+// Result of get security lists request.
+// Результат выполнения запроса списка инструментов.
+message GetSecuritiesResult {
+  // Securities list.
+  // Список инструментов.
+  repeated proto.tradeapi.v1.Security securities = 1;
+}
+
+// Security price sign.
+// Разрешенный знак цены у инструмента.
+enum PriceSign {
+  // Value is not specified. Do not use.
+  // Значение не указано. Не использовать.
+  PRICE_SIGN_UNSPECIFIED = 0;
+  // Positive.
+  // Положительная цена.
+  PRICE_SIGN_POSITIVE = 1;
+  // Non negative.
+  // Не отрицательная цена.
+  PRICE_SIGN_NON_NEGATIVE = 2;
+  // Any.
+  // Любая цена, без ограничения на знак.
+  PRICE_SIGN_ANY = 3;
+}
+
+// Security.
+// Инструмент.
+message Security {
+  // Security code.
+  // Код инструмента.
+  string code = 1;
+  // Security board.
+  // Основной режим торгов инструмента.
+  string board = 2;
+  // Market.
+  // Рынок инструмента.
+  Market market = 3;
+  // Number of decimal digits in the price value.
+  // Количество знаков в дробной части цены.
+  sint32 decimals = 4;
+  // Lot size.
+  // Размер лота.
+  sint32 lot_size = 5;
+  // Price min step.
+  // Минимальный шаг цены.
+  sint32 min_step = 6;
+  // Currency.
+  // Валюта номинала инструмента.
+  string currency = 7;
+  // Instrument code.
+  // Код инструмента.
+  string instrument_code = 8;
+  // Security name.
+  // Название инструмента.
+  string short_name = 9;
+  // Параметры инструмента. Значение представлено в виде битовой маски.
+  // 0 Нет параметров.
+  // 1 Инструмент торгуется на Бирже.
+  // 2 Инструмент допущен к торгам у Брокера - существенно для НЕ ГЛАВНЫХ трейдеров, главным доступны все инструменты, торгуемые на биржах.
+  // 4 Рыночные заявки (без ограничения по цене) разрешены.
+  // 8 Признак маржинальности бумаги.
+  // 16 Опцион Call.
+  // 32 Опцион Put.
+  // 48 Фьючерс: Call | Put.
+  // 64 Разрешен для резидентов.
+  // 128 Разрешен для нерезидентов.
+  int32 properties = 10;
+  // Timezone name.
+  // Имя таймзоны.
+  string time_zone_name = 11;
+  // The price unit cost for one security (not for the lot)), excluding accrued interest.
+  // Стоимость пункта цены одного инструмента (не лота), без учета НКД.
+  double bp_cost = 12;
+  // Current accrued interest.
+  // Текущий НКД.
+  double accrued_interest = 13;
+  // Allowed price: positive, non negative, any.
+  // Допустимая цена: положительная, неотрицательная, любая.
+  PriceSign price_sign = 14;
+  // Ticker.
+  // Код инструмента (тикер) на биржевой площадке листинга.
+  string ticker = 15;
+  // The split ratio of a security in one standard lot.
+  // Коэффициент дробления ценной бумаги в одном стандартном лоте.
+  sint32 lot_divider = 16;
+}
+
+// What kind of data the response contains.
+// Какие данные будут в ответе.
+message PortfolioContent {
+  // Currency positions.
+  // Валютные позиции.
+  bool include_currencies = 1;
+  // Money positions.
+  // Денежные позиции.
+  bool include_money = 2;
+  // DEPO positions.
+  // Позиции DEPO.
+  bool include_positions = 3;
+  // Buy and Sell limits.
+  // Лимиты покупки и продажи.
+  bool include_max_buy_sell = 4;
+}
+
+// DEPO position.
+// Позиция DEPO.
+message PositionRow {
+  // Security Code.
+  // Тикер инструмента.
+  string security_code = 1;
+  // Security market.
+  // Рынок инструмента.
+  proto.tradeapi.v1.Market market = 2;
+  // Current position, items.
+  // Текущая позиция, шт.
+  int64 balance = 3;
+  // Current price in price_currency.
+  // Текущая цена в валюте цены инструмента.
+  double current_price = 4;
+  // Positions equity.
+  // Оценка позиции по инструменту в валюте риска.
+  double equity = 5;
+  // Balanced price of security in price_currency.
+  // Балансовая цена в валюте цены инструмента.
+  double average_price = 6;
+  // Risk currency.
+  // Валюта риска.
+  string currency = 7;
+  // P/L for initial position, in risk currency.
+  // Прибыль/убыток по входящей позиции, в валюте риска.
+  double accumulated_profit = 8;
+  // Daily P/L, in risk currency.
+  // Прибыль/убыток по сделкам за день, в валюте риска.
+  double today_profit = 9;
+  // Unrealized P/L, in average_price_currency.
+  // Нереализованные прибыль/убытки по балансовой цене в валюте инструмента.
+  double unrealized_profit = 10;
+  // P/L in price_currency.
+  // Прибыль/убытки в валюте цены инструмента.
+  double profit = 11;
+  // Max lots to buy.
+  // Максимальное кол-во лотов, доступных для покупки.
+  int64 max_buy = 12;
+  // Max lots to sell.
+  // Максимальное кол-во лотов, доступных для продажи.
+  int64 max_sell = 13;
+  // Security price currency.
+  // Валюта цены инструмента.
+  string price_currency = 14;
+  // Balanced price currency.
+  // Валюта балансовой цены.
+  string average_price_currency = 15;
+  // Risk Currency to Price currency Cross rate.
+  // Кросс-курс валюты балансовой цены к валюте риска.
+  double average_rate = 16;
+}
+
+// Currency position.
+// Валютная позиция.
+message CurrencyRow {
+  // Currency code.
+  // Код валюты.
+  string name = 1;
+  // Current position.
+  // Текущая позиция.
+  double balance = 2;
+  // Currency rate for RUB.
+  // Курс валюты к рублю.
+  double cross_rate = 3;
+  // Equity in RUB.
+  // Оценка в рублях.
+  double equity = 4;
+  // Unrealized P/L, in RUB.
+  // Нереализованные прибыль/убытки в рублях.
+  double unrealized_profit = 5;
+}
+
+// Money position.
+// Денежная позиция.
+message MoneyRow {
+  // Position market.
+  // Рынок позиции.
+  proto.tradeapi.v1.Market market = 1;
+  // Currency code.
+  // Код валюты.
+  string currency = 2;
+  // Current position.
+  // Текущая позиция.
+  double balance = 3;
+}
+
+// Get Portfolio Request.
+// Запрос портфеля.
+message GetPortfolioRequest {
+  // Trade Account ID.
+  // Идентификатор торгового счёта.
+  string client_id = 1;
+  // What data to return by request.
+  // Какие данные возвращать в ответе.
+  PortfolioContent content = 2;
+}
+
+// GetPortfolioRequest result.
+// Результат GetPortfolioRequest.
+message GetPortfolioResult {
+  // Trade Account ID.
+  // Идентификатор торгового счёта.
+  string client_id = 1;
+  // What kind of data the response contains.
+  // Какие данные будут в ответе.
+  PortfolioContent content = 2;
+  // Current equity, RUB.
+  // Текущая оценка портфеля в рублях.
+  double equity = 3;
+  // Open Equity, RUB.
+  // Входящая оценка портфеля в рублях.
+  double balance = 4;
+  // DEPO positions.
+  // Позиции DEPO.
+  repeated PositionRow positions = 5;
+  // Currency positions.
+  // Валютные позиции.
+  repeated CurrencyRow currencies = 6;
+  // Money positions.
+  // Денежные позиции.
+  repeated MoneyRow money = 7;
+}
+
+// Order placement properties.
+// Поведение заявки при выставлении в стакан.
+enum OrderProperty  {
+  // Value is not specified. Do not use.
+  // Значение не указано. Не использовать.
+  ORDER_PROPERTY_UNSPECIFIED = 0;
+  // The residual of partially matched order is to stay in OrderBook.
+  // Неисполненная часть заявки помещается в очередь заявок биржи.
+  ORDER_PROPERTY_PUT_IN_QUEUE = 1;
+  // The residual of partially matched order is to be cancelled.
+  // Неисполненная часть заявки снимается с торгов.
+  ORDER_PROPERTY_CANCEL_BALANCE = 2;
+  // Filling the order only in case the posibility of immediate and full execution.
+  // Сделки совершаются только в том случае, если заявка может быть удовлетворена полностью и сразу при выставлении.
+  ORDER_PROPERTY_IMM_OR_CANCEL = 3;
+}
+
+// Conditional order types.
+// Типы условных ордеров.
+enum OrderConditionType {
+  // Value is not specified. Do not use.
+  // Значение не указано. Не использовать.
+  ORDER_CONDITION_TYPE_UNSPECIFIED = 0;
+  // Best Bid.
+  // Лучшая цена покупки.
+  ORDER_CONDITION_TYPE_BID = 1;
+  // Best Bid or Last trade price and higher.
+  // Лучшая цена покупки или сделка по заданной цене и выше.
+  ORDER_CONDITION_TYPE_BID_OR_LAST = 2;
+  // Best Ask.
+  // Лучшая цена продажи.
+  ORDER_CONDITION_TYPE_ASK = 3;
+  // Best Ask or Last trade price and lower.
+  // Лучшая цена продажи или сделка по заданной цене и ниже.
+  ORDER_CONDITION_TYPE_ASK_OR_LAST = 4;
+  // Placement time. Parameter OrderCondition.time must be set.
+  // Время выставления заявки на Биржу. Параметр OrderCondition.time должен быть установлен.
+  ORDER_CONDITION_TYPE_TIME = 5;
+  // Coverage below specified.
+  // Обеспеченность ниже заданной.
+  ORDER_CONDITION_TYPE_COV_DOWN = 6;
+  // Coverage above specified.
+  // Обеспеченность выше заданной.
+  ORDER_CONDITION_TYPE_COV_UP = 7;
+  // Last trade price and higher.
+  // Сделка на рынке по заданной цене или выше.
+  ORDER_CONDITION_TYPE_LAST_UP = 8;
+  // Last trade price and lower.
+  // Сделка на рынке по заданной цене или ниже.
+  ORDER_CONDITION_TYPE_LAST_DOWN = 9;
+}
+
+// Order placement properties.
+// Свойства выставления заявок.
+message OrderCondition {
+  // Condition type.
+  // Тип условия.
+  OrderConditionType type = 1;
+  // Conditional value.
+  // Значение для условия.
+  double price = 2;
+  // Placement time.
+  // Время выставления.
+  google.protobuf.Timestamp time = 3;
+}
+
+// New Order Request.
+// Запрос на создание заявки.
+message NewOrderRequest {
+  // Trade Account ID.
+  // Идентификатор торгового счёта.
+  string client_id = 1;
+  // Trading Board.
+  // Режим торгов.
+  string security_board = 2;
+  // Security Code.
+  // Тикер инструмента.
+  string security_code = 3;
+  // Transaction direction.
+  // Направление сделки.
+  BuySell buy_sell = 4;
+  // Order volume in lots.
+  // Количество лотов инструмента для заявки.
+  int32 quantity = 5;
+  // Use credit. Not available in derivative market.
+  // Использовать кредит. Недоступно для срочного рынка.
+  bool use_credit = 6;
+  // Order price. Use "null" to place Market Order.
+  // Цена заявки. Используйте "null", чтобы выставить рыночную заявку.
+  google.protobuf.DoubleValue price = 7;
+  // Unfilled order execution property.
+  // Свойства исполнения частично исполненных заявок.
+  OrderProperty property = 8;
+  // Order placement properties.
+  // Свойства выставления заявок.
+  OrderCondition condition = 9;
+  // Order lifetime condition.
+  // Условие по времени действия заявки.
+  OrderValidBefore valid_before = 10;
+}
+
+// NewOrderRequest result.
+// Результат выполнения NewOrderRequest.
+message NewOrderResult {
+  // Trade Account Id.
+  // Идентификатор торгового счёта.
+  string client_id = 1;
+  // Transaction Id, which can be used to cancel order or find corresponding order_no in Event service.
+  // Идентификатор транзакции, который может быть использован для отмены заявки или определения номера заявки в сервисе событий.
+  int32 transaction_id = 2;
+  // Security Code.
+  // Тикер инструмента.
+  string security_code = 3;
+}
+
+// Cancel Order Request.
+// Запрос на отмену заявки.
+message CancelOrderRequest {
+  // Trade Account Id.
+  // Идентификатор торгового счёта.
+  string client_id = 1;
+  // Transaction Id, which can be used to cancel order or find corresponding order_no in Event service.
+  // Идентификатор транзакции, который может быть использован для отмены заявки или определения номера заявки в сервисе событий.
+  int32 transaction_id = 2;
+}
+
+// CancelOrderRequest result.
+// Результат выполнения CancelOrderRequest.
+message CancelOrderResult {
+  // Trade Account Id.
+  // Идентификатор торгового счёта.
+  string client_id = 1;
+  // Transaction Id, which can be used to cancel order or find corresponding order_no in Event service.
+  // Идентификатор транзакции, который может быть использован для отмены заявки или определения номера заявки в сервисе событий.
+  int32 transaction_id = 2;
+}
+
+// Get Orders Request.
+// Запрос списка заявок.
+message GetOrdersRequest {
+  // Trade Account ID.
+  // Идентификатор торгового счёта.
+  string client_id = 1;
+  // Include executed orders in response.
+  // Вернуть исполненные заявки.
+  bool include_matched = 2;
+  // Include canceled orders in response.
+  // Вернуть отмененные заявки.
+  bool include_canceled = 3;
+  // Include active orders in response.
+  // Вернуть активные заявки.
+  bool include_active = 4;
+}
+
+// Order status.
+// Состояние заявки.
+enum OrderStatus {
+  // Value is not specified. Do not use.
+  // Значение не указано. Не использовать.
+  ORDER_STATUS_UNSPECIFIED = 0;
+  // Order is not in OrderBook.
+  // Заявка не выставлена.
+  ORDER_STATUS_NONE = 1;
+  // Order is in OrderBook.
+  // Заявка выставлена.
+  ORDER_STATUS_ACTIVE = 2;
+  // Order is canceled.
+  // Заявка отменена.
+  ORDER_STATUS_CANCELLED = 3;
+  // Order is matched.
+  // Заявка исполнена.
+  ORDER_STATUS_MATCHED = 4;
+}
+
+// Order.
+// Заявка.
+message Order {
+  // Order No. Appear only when an order is placed in OrderBook.
+  // Биржевой номер заявки. Появляется после того, как заявка попадает в стакан.
+  int64 order_no = 1;
+  // Transaction Id . Assigned when a command for new order creation is sent.
+  // Идентификатор транзакции. Назначается после подачи команды на создание новой заявки.
+  int32 transaction_id = 2;
+  // Security Code.
+  // Тикер инструмента.
+  string security_code = 3;
+  // Trade Account ID.
+  // Идентификатор торгового счёта.
+  string client_id = 4;
+  // Order status.
+  // Состояние заявки.
+  OrderStatus status = 5;
+  // Transaction direction.
+  // Направление сделки.
+  BuySell buy_sell = 6;
+  // Time of Order placement in UTC.
+  // Время регистрации заявки на бирже. В UTC.
+  google.protobuf.Timestamp created_at = 7;
+  // Lot price.
+  // Цена за лот.
+  double price = 8;
+  // Volume in lots.
+  // Количество, в лотах.
+  int32 quantity = 9;
+  // Residual volume in lots.
+  // Неисполненный остаток, в лотах.
+  int32 balance = 10;
+  // Rejection reason or conditional order resolution.
+  // Причина отказа или вердикт по условной заявке.
+  string message = 11;
+  // Price currency.
+  // Валюта цены.
+  string currency = 12;
+  // Conditional order properties.
+  // Параметры условной заявки.
+  OrderCondition condition = 13;
+  // Order lifetime.
+  // Время действия заявки.
+  OrderValidBefore valid_before = 14;
+  // Time of order registration on the server in UTC.
+  // Время, когда заявка была зарегистрирована на сервере. В UTC.
+  google.protobuf.Timestamp accepted_at = 15;
+  // Security Board.
+  // Основной режим торгов инструмента.
+  string security_board = 16;
+  // Market.
+  // Рынок.
+  proto.tradeapi.v1.Market market = 17;
+}
+
+// GetOrdersRequest result.
+// Результат GetOrdersRequest.
+message GetOrdersResult {
+  // Trade Account ID.
+  // Идентификатор торгового счёта.
+  string client_id = 1;
+  // Orders list.
+  // Список заявок.
+  repeated Order orders = 2;
+}
+
+// Timeframe.
+// Таймфрейм.
+message TimeFrame {
+  enum Unit {
+    // Value is not specified. Do not use.
+    // Значение не указано. Не использовать.
+    UNIT_UNSPECIFIED = 0;
+    // Munute.
+    // Минута.
+    UNIT_MINUTE = 1;
+    // Hour.
+    // Час.
+    UNIT_HOUR = 2;
+    // Day.
+    // День.
+    UNIT_DAY = 3;
+    // Week.
+    // Неделя.
+    UNIT_WEEK = 4;
+    // Month.
+    // Месяц.
+    UNIT_MONTH = 5;
+    // Quarter.
+    // Квартал.
+    UNIT_QUARTER = 6;
+    // Year.
+    // Год.
+    UNIT_YEAR = 7;
+  }
+
+  // Timeframe units.
+  // Единицы измерения таймфрейма.
+  Unit time_unit = 1;
+}
+
+// Subscription/unsubscription.
+// Подписка/отписка.
+message SubscriptionRequest {
+  // Set only one parameter.
+  // Определите только одно из полей.
+  oneof payload {
+    // OrderBook subscription request.
+    // Запрос подписки на стакан.
+    proto.tradeapi.v1.OrderBookSubscribeRequest order_book_subscribe_request = 1;
+    // OrderBook unsubscribe request.
+    // Запрос на отписку от стакана.
+    proto.tradeapi.v1.OrderBookUnsubscribeRequest order_book_unsubscribe_request = 2;
+    // Subscribe for trades and orders.
+    // Запрос подписки на ордера и сделки.
+    proto.tradeapi.v1.OrderTradeSubscribeRequest order_trade_subscribe_request = 3;
+    // Cancel all previous subscription for trades and orders.
+    // Отменить все предыдущие запросы на подписки на ордера и сделки.
+    proto.tradeapi.v1.OrderTradeUnsubscribeRequest order_trade_unsubscribe_request = 4;
+  }
+}
+
+// Event.
+// Событие.
+message Event {
+  // It is possible to set the only field.
+  // Только одно из полей может быть заполнено.
+  oneof payload {
+    // Order event.
+    // Событие с заявкой.
+    proto.tradeapi.v1.OrderEvent order = 1;
+    // Trade event.
+    // Событие со сделкой.
+    proto.tradeapi.v1.TradeEvent trade = 2;
+    // OrderBook event.
+    // Событие стакана.
+    proto.tradeapi.v1.OrderBookEvent order_book = 3;
+    // Portfolio event.
+    // Событие портфеля.
+    proto.tradeapi.v1.PortfolioEvent portfolio = 5;
+    // Request execution result.
+    // Результат выполнения запроса.
+    proto.tradeapi.v1.ResponseEvent response = 10;
+  }
+}
+
+// OrderBook subscribe request.
+// Запрос подписки на стакан.
+message OrderBookSubscribeRequest {
+  // Request ID.
+  // Идентификатор запроса.
+  string request_id = 1;
+  // Security Code.
+  // Тикер инструмента.
+  string security_code = 2;
+  // Trading Board.
+  // Режим торгов.
+  string security_board = 3;
+}
+
+// OrderBook unsubscribe request.
+// Запрос на отписку от стакана.
+message OrderBookUnsubscribeRequest {
+  // Request ID.
+  // Идентификатор запроса.
+  string request_id = 1;
+  // Security Code.
+  // Тикер инструмента.
+  string security_code = 2;
+  // Trading Board.
+  // Режим торгов.
+  string security_board = 3;
+}
+
+// Subscribe for trades and orders.
+// Запрос подписки на ордера и сделки.
+message OrderTradeSubscribeRequest {
+  // Request ID.
+  // Идентификатор запроса.
+  string request_id = 1;
+  // Включить сделки в подписку.
+  bool include_trades = 2;
+  // Включить заявки в подписку.
+  // Тикер инструмента.
+  bool include_orders = 3;
+  // Торговые коды счетов.
+  repeated string client_ids = 4;
+}
+
+// Cancel all previous subscription for trades and orders.
+// Отменить все предыдущие запросы на подписки на ордера и сделки.
+message OrderTradeUnsubscribeRequest {
+  // Request ID.
+  // Идентификатор запроса.
+  string request_id = 1;
+}
+
+// Portfolio subscription.
+// Подписка на портфель.
+message PortfolioSubscription {
+  // Trade Account ID.
+  // Идентификатор торгового счёта.
+  string client_id = 1;
+  // What kind of data the response contains.
+  // Какие данные будут в ответе.
+  proto.tradeapi.v1.PortfolioContent content = 2;
+}
+
+// Order event.
+// Событие с заявкой.
+message OrderEvent {
+  // Order No. Appear only when an order is placed in OrderBook.
+  // Биржевой номер заявки. Появляется после того, как заявка попадает в стакан.
+  int64 order_no = 1;
+  // Transaction Id . Assigned when a command for new order creation is sent.
+  // Идентификатор транзакции. Назначается после подачи команды на создание новой заявки.
+  int32 transaction_id = 2;
+  // Security Code.
+  // Тикер инструмента.
+  string security_code = 3;
+  // Trade Account ID.
+  // Идентификатор торгового счёта.
+  string client_id = 4;
+  // Order status.
+  // Состояние заявки.
+  OrderStatus status = 5;
+  // Transaction direction.
+  // Направление сделки.
+  BuySell buy_sell = 6;
+  // Time of Order placement in UTC.
+  // Время регистрации заявки на бирже. В UTC.
+  google.protobuf.Timestamp created_at = 7;
+  // Lot price.
+  // Цена за лот.
+  double price = 8;
+  // Volume in lots.
+  // Количество, в лотах.
+  int32 quantity = 9;
+  // Residual volume in lots.
+  // Неисполненный остаток, в лотах.
+  int32 balance = 10;
+  // Rejection reason or conditional order resolution.
+  // Причина отказа или вердикт по условной заявке.
+  string message = 11;
+  // Price currency.
+  // Валюта цены инструмента.
+  string currency = 12;
+  // Conditional order properties.
+  // Параметры условной заявки.
+  OrderCondition condition = 13;
+  // Order lifetime.
+  // Время действия заявки.
+  OrderValidBefore valid_before = 14;
+  // Time of order registration on the server in UTC.
+  // Время, когда заявка была зарегистрирована на сервере. В UTC.
+  google.protobuf.Timestamp accepted_at = 15;
+}
+
+// Trade event.
+// Событие со сделкой.
+message TradeEvent {
+  // Security Code.
+  // Тикер инструмента.
+  string security_code = 1;
+  // Trade No.
+  // Номер сделки.
+  int64 trade_no = 2;
+  // Order No.
+  // Номер заявки.
+  int64 order_no = 3;
+  // Trade Account ID.
+  // Идентификатор торгового счёта.
+  string client_id = 4;
+  // Time of trade registration on stock exchange in UTC.
+  // Время исполнения сделки на бирже. В UTC.
+  google.protobuf.Timestamp created_at = 5;
+  // Volume in lots.
+  // Количество, в лотах.
+  int64 quantity = 6;
+  // Trade Price.
+  // Цена сделки.
+  double price = 7;
+  // Trade currency value.
+  // Объём сделки в валюте инструмента.
+  double value = 8;
+  // Transaction direction.
+  // Направление сделки.
+  proto.tradeapi.v1.BuySell buy_sell = 9;
+  // Fee, RUB.
+  // Комиссия, в рублях.
+  double commission = 10;
+  // Trade currency.
+  // Валюта сделки.
+  string currency = 11;
+  // Accrued interest.
+  // НКД сделки.
+  double accrued_interest = 12;
+}
+
+// Order book row.
+// Строка стакана.
+message OrderBookRow {
+  // Price.
+  // Цена.
+  double price = 1 [json_name = "p"];
+  // Lots.
+  // Количество лотов.
+  int64 quantity = 2 [json_name = "q"];
+}
+
+// OrderBook event.
+// Событие стакана.
+message OrderBookEvent {
+  // Security Code.
+  // Тикер инструмента.
+  string security_code = 1;
+  // Trading Board.
+  // Режим торгов.
+  string security_board = 2;
+  // Asks.
+  // Заявки на продажу.
+  repeated OrderBookRow asks = 3;
+  // Bids.
+  // Заявки на покупку.
+  repeated OrderBookRow bids = 4;
+}
+
+// Portfolio event.
+// Событие портфеля.
+message PortfolioEvent {
+  // Trade Account ID.
+  // Идентификатор торгового счёта.
+  string client_id = 1;
+  // What kind of data portfolio event contains.
+  // Какие данные находятся в событии портфеля.
+  proto.tradeapi.v1.PortfolioContent content = 2;
+  // Current equity, RUB.
+  // Текущая оценка портфеля в рублях.
+  double equity = 3;
+  // Open Equity, RUB.
+  // Входящая оценка портфеля в рублях.
+  double balance = 4;
+  // DEPO positions.
+  // Позиции DEPO.
+  repeated PositionRow positions = 5;
+  // Currency positions.
+  // Валютные позиции.
+  repeated CurrencyRow currencies = 6;
+  // Money positions.
+  // Денежные позиции.
+  repeated MoneyRow money = 7;
+}
+
+
+// Day candle.
+// Дневная свеча.
+message DayCandle {
+  // Date (local time).
+  // Дата (по времени биржи).
+  google.type.Date date = 1;
+  // Open price.
+  // Цена открытия.
+  Decimal open = 2;
+  // Close price.
+  // Цена закрытия.
+  Decimal close = 3;
+  // High price.
+  // Максимальная цена.
+  Decimal high = 4;
+  // Low price.
+  // Минимальная цена.
+  Decimal low = 5;
+  // Volume.
+  // Объем торгов.
+  int64 volume = 6;
+}
+
+// Intraday candle.
+// Внетридневная свеча.
+message IntradayCandle {
+  // Time (UTC).
+  // Время (по UTC).
+  google.protobuf.Timestamp timestamp = 1;
+  // Open price.
+  // Цена открытия.
+  Decimal open = 2;
+  // Close price.
+  // Цена закрытия.
+  Decimal close = 3;
+  // High price.
+  // Максимальная цена.
+  Decimal high = 4;
+  // Low price.
+  // Минимальная цена.
+  Decimal low = 5;
+  // Volume.
+  // Объем торгов.
+  int64 volume = 6;
+}
+
+// Timeframe.
+// Временной интервал.
+enum IntradayCandleTimeFrame {
+  // Value is not specified. Do not use.
+  // Значение не указано. Не использовать.
+  INTRADAYCANDLE_TIMEFRAME_UNSPECIFIED = 0;
+  // 1 minute.
+  // 1 минута.
+  INTRADAYCANDLE_TIMEFRAME_M1 = 1;
+  // 5 minutes.
+  // 5 минут.
+  INTRADAYCANDLE_TIMEFRAME_M5 = 2;
+  // 15 minutes.
+  // 15 минут.
+  INTRADAYCANDLE_TIMEFRAME_M15 = 3;
+  // 1 hour.
+  // 1 час.
+  INTRADAYCANDLE_TIMEFRAME_H1 = 4;
+}
+
+// Timeframe for day candle.
+// Временной интервал дневной свечи.
+enum DayCandleTimeFrame {
+  // Value is not specified. Do not use.
+  // Значение не указано. Не использовать.
+  DAYCANDLE_TIMEFRAME_UNSPECIFIED = 0;
+  // 1 day.
+  // 1 день.
+  DAYCANDLE_TIMEFRAME_D1 = 1;
+  // 1 week.
+  // 1 неделя.
+  DAYCANDLE_TIMEFRAME_W1 = 2;
+}
+
+// Day candles interval.
+// Интервал запроса дневных свечей.
+message DayCandleInterval {
+  // Date from.
+  // Дата начала.
+  google.type.Date from = 1;
+  // Date to.
+  // Дата окончания.
+  google.type.Date to = 2;
+  // Candles count limit.
+  // Количество свечей.
+  int32 count = 3;
+}
+
+// Intraday candles interval.
+// Интервал запроса внутридневных свечей.
+message IntradayCandleInterval {
+  // Date from.
+  // Дата начала.
+  google.protobuf.Timestamp from = 1;
+  // Date to.
+  // Дата окончания.
+  google.protobuf.Timestamp to = 2;
+  // Candles count limit.
+  // Количество свечей.
+  int32 count = 3;
+}
+
+// Get day candles request.
+// Запрос дневных свечей.
+message GetDayCandlesRequest {
+  // Trading Board.
+  // Режим торгов.
+  string security_board = 1;
+  // Security Code.
+  // Тикер инструмента.
+  string security_code = 2;
+  // Timeframe.
+  // Временной интервал.
+  DayCandleTimeFrame time_frame = 3;
+  // Interval.
+  // Интервал.
+  DayCandleInterval interval = 4;
+}
+
+// GetDayCandlesRequest result.
+// Результат GetDatCandlesRequest.
+message GetDayCandlesResult {
+  // Candles list.
+  // Список свечей.
+  repeated DayCandle candles = 1;
+}
+
+// Get intraday candles request.
+// Запрос внутридневных свечей.
+message GetIntradayCandlesRequest {
+  // Trading Board.
+  // Режим торгов.
+  string security_board = 1;
+  // Security Code.
+  // Тикер инструмента.
+  string security_code = 2;
+  // Timeframe.
+  // Временной интервал.
+  IntradayCandleTimeFrame time_frame = 3;
+  // Interval.
+  // Интервал.
+  IntradayCandleInterval interval = 4;
+}
+
+// GetIntradayCandlesRequest result.
+// Результат GetIntradayCandlesRequest.
+message GetIntradayCandlesResult {
+  // Candles list.
+  // Список свечей.
+  repeated IntradayCandle candles = 1;
+}
+
+// Market.
+// Рынок.
+enum Market {
+  // Value is not specified. Do not use.
+  // Значение не указано. Не использовать.
+  MARKET_UNSPECIFIED = 0;
+  // Moscow Exchange Stock market.
+  // Фондовый рынок Московской Биржи.
+  MARKET_STOCK = 1;
+  // Moscow Exchange Derivative market.
+  // Срочный рынок Московской Биржи.
+  MARKET_FORTS = 4;
+  // Saint-Petersburg Exchange.
+  // Санкт-Петербургская биржа.
+  MARKET_SPBEX = 7;
+  // US Stock market.
+  // Фондовый рынок США.
+  MARKET_MMA = 14;
+  // Moscow Exchange Currency market.
+  // Валютный рынок Московской Биржи.
+  MARKET_ETS = 15;
+  // Moscow Exchange Bond market.
+  // Долговой рынок Московской Биржи.
+  MARKET_BONDS = 20;
+  // Moscow Exchange option market.
+  // Рынок опционов Московской Биржи.
+  MARKET_OPTIONS = 21;
+}
+
+// Request execution result.
+// Результат выполнения запроса.
+message ResponseEvent {
+  // Request ID.
+  // Идентификатор запроса.
+  string request_id = 1;
+  // Request execution result.
+  // Результат выполнения запроса.
+  bool success = 2;
+  // Errors in request execution.
+  // Ошибки выполнения запроса.
+  repeated Error errors = 3;
+}
+
+// Error data.
+// Данные об ошибке.
+message Error {
+  // Error code.
+  // Код ошибки.
+  string code = 1;
+  // Error message.
+  // Сообщение об ошибке.
+  string message = 2;
+}
+
+// Transaction direction.
+// Направление сделки.
+enum BuySell {
+  // Value is not specified. Do not use.
+  // Значение не указано. Не использовать.
+  BUY_SELL_UNSPECIFIED = 0;
+  // Sell.
+  // Продажа.
+  BUY_SELL_SELL = 1;
+  // Buy.
+  // Покупка.
+  BUY_SELL_BUY = 2;
+}
+
+// Time validation for order.
+// Установка временных рамок действия заявки.
+enum OrderValidBeforeType {
+  // Value is not specified. Do not use.
+  // Значение не указано. Не использовать.
+  ORDER_VALID_BEFORE_TYPE_UNSPECIFIED = 0;
+  // Order is valid till the end of the current session.
+  // Заявка действует до конца сессии.
+  ORDER_VALID_BEFORE_TYPE_TILL_END_SESSION = 1;
+  // Order is valid till cancellation.
+  // Заявка действует, пока не будет отменена.
+  ORDER_VALID_BEFORE_TYPE_TILL_CANCELLED = 2;
+  // Order is valid till specified moment. OrderValidBefore.time parameter must be set.
+  // Заявка действует до указанного времени. Параметр OrderValidBefore.time должно быть установлен.
+  ORDER_VALID_BEFORE_TYPE_EXACT_TIME = 3;
+}
+
+// Order time condition.
+// Условие по времени действия заявки.
+message OrderValidBefore {
+  // Condition type.
+  // Тип условия.
+  OrderValidBeforeType type = 1;
+  // Order lifetime.
+  // Время действия заявки.
+  google.protobuf.Timestamp time = 2;
+}
+
+// Real number with fixed precision (including integers).
+// The total value is calculated as follows: num * 10^-scale.
+// https://en.wikipedia.org/wiki/Scientific_notation
+// Example:
+// The number "250.655" is Decimal type with num = 250655 and scale = 3, 250.655 = 250655 * 10^-3
+message Decimal {
+  // Mantissa.
+  // Мантисса.
+  int64 num = 1;
+
+  // exponent for base 10.
+  // Экспонента.
+  uint32 scale = 2;
+}

@@ -8,6 +8,8 @@ public abstract class BaseClient implements ApiClient {
     public static final String PORTFOLIO_PATH = "/public/api/v1/portfolio";
     public static final String SECURITIES_PATH = "/public/api/v1/securities";
     public static final String STOPS_PATH = "/public/api/v1/stops";
+    public static final String FINAM_API_DEFAULT_HOST = "trade-api.finam.ru";
+    public static final int FINAM_API_DEFAULT_PORT = 443;
     public static final String FINAM_API_DEFAULT_URL = "https://trade-api.finam.ru";
     private String token;
     private String url;

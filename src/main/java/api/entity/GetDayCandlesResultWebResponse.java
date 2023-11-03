@@ -1,4 +1,5 @@
 package api.entity;
 
-public record GetDayCandlesResultWebResponse(WebError error, GetDayCandlesResult data) {
+public record GetDayCandlesResultWebResponse(WebError error, GetDayCandlesResult data)
+        implements Response<GetDayCandlesResultWebResponse> {
 }

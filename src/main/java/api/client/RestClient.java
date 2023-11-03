@@ -35,29 +35,14 @@ public class RestClient extends BaseClient {
      * @return числовой идентификатор
      */
     public long checkToken() {
-        IdResultWebResponse response = Unirest.get("{path}")
+        Response<IdResultWebResponse> response = Unirest.get("{path}")
                 .header("X-Api-Key", getToken())
                 .routeParam("path", CHECK_TOKENS_PATH)
                 .asObject(IdResultWebResponse.class)
                 .getBody();
 
-        //todo: code is in words? not numbers. need to find them
-        if (!response.error().code().equals("SUCCESS")) {
-            switch (response.error().code()) {
-                case "UNAUTHENTICATED" -> throw new IllegalArgumentException(response.error().message());
-                default -> throw new IllegalStateException("Unexpected value: " + response.error().code());
-            }
-        } else {
-            return response.data().id();
-        }
+        return ((IdResult) validateResponse(response)).id();
     }
-
-    //todo: two funcs below are the same on 99% ...combine?
-    //todo: add to errors TOO_MANY_REQUESTS(429)
-    //todo: what is /subscriptions path ?????
-    //todo: x-api-key or "Authorization: Bearer <токен_доступа>." ????
-    //todo: STOPS_PATH or "стоп-заявках GET /api/v1/stop-orders по счетам;" ?????
-    //todo: WHERE is it: "или в сообщении OrderEvent от сервиса событий (EventResponse.event.order)." ????
 
     /**
      *
@@ -79,7 +64,7 @@ public class RestClient extends BaseClient {
         if (securityBoard.isEmpty() | securityCode.isEmpty() | timeFrame.isEmpty())
             throw new IllegalArgumentException("parameters must be set");
 
-        GetDayCandlesResultWebResponse response = Unirest.get("{path}")
+        Response<GetDayCandlesResultWebResponse> response = Unirest.get("{path}")
                 .header("X-Api-Key", getToken())
                 .routeParam("path", GET_DAY_CANDLES_PATH)
                 .queryString("SecurityBoard", securityBoard)
@@ -91,14 +76,7 @@ public class RestClient extends BaseClient {
                 .asObject(GetDayCandlesResultWebResponse.class)
                 .getBody();
 
-        if (!response.error().code().equals("SUCCESS")) {
-            switch (response.error().code()) {
-                case "UNAUTHENTICATED" -> throw new IllegalArgumentException(response.error().message());
-                default -> throw new IllegalStateException("Unexpected value: " + response.error().code());
-            }
-        } else {
-            return response.data().candles();
-        }
+        return ((GetDayCandlesResult) validateResponse(response)).candles();
     }
 
 
@@ -122,7 +100,7 @@ public class RestClient extends BaseClient {
         if (securityBoard.isEmpty() | securityCode.isEmpty() | timeFrame.isEmpty())
             throw new IllegalArgumentException("parameters must be set");
 
-        GetIntradayCandlesResultWebResponse response = Unirest.get("{path}")
+        Response<GetIntradayCandlesResultWebResponse> response = Unirest.get("{path}")
                 .header("X-Api-Key", getToken())
                 .routeParam("path", GET_INTRADAY_CANDLES_PATH)
                 .queryString("SecurityBoard", securityBoard)
@@ -134,14 +112,7 @@ public class RestClient extends BaseClient {
                 .asObject(GetIntradayCandlesResultWebResponse.class)
                 .getBody();
 
-        if (!response.error().code().equals("SUCCESS")) {
-            switch (response.error().code()) {
-                case "UNAUTHENTICATED" -> throw new IllegalArgumentException(response.error().message());
-                default -> throw new IllegalStateException("Unexpected value: " + response.error().code());
-            }
-        } else {
-            return response.data().candles();
-        }
+        return ((GetIntradayCandlesResult) validateResponse(response)).candles();
     }
 
     /**
@@ -159,7 +130,7 @@ public class RestClient extends BaseClient {
         if (order == null)
             throw new IllegalArgumentException("order is null");
 
-        NewOrderResultWebResponse response = Unirest.post("{path}")
+        Response<NewOrderResultWebResponse> response = Unirest.post("{path}")
                 .header("X-Api-Key", getToken())
                 .header("Content-Type", "application/json")
                 .routeParam("path", ORDERS_PATH)
@@ -167,15 +138,7 @@ public class RestClient extends BaseClient {
                 .asObject(NewOrderResultWebResponse.class)
                 .getBody();
 
-        if (!response.error().code().equals("SUCCESS")) {
-            switch (response.error().code()) {
-                case "UNAUTHENTICATED" -> throw new IllegalArgumentException(response.error().message());
-                default -> throw new IllegalStateException("Unexpected value: " + response.error().code());
-            }
-        } else {
-            return response.data().transactionId();
-        }
-
+        return ((NewOrderResult) validateResponse(response)).transactionId();
     }
 
     /**
@@ -190,7 +153,7 @@ public class RestClient extends BaseClient {
         if (clientId.isEmpty() | transactionId == 0)
             throw new IllegalArgumentException("arguments musr be set");
 
-        CancelOrderResultWebResponse response = Unirest.delete("{path}")
+        Response<CancelOrderResultWebResponse> response = Unirest.delete("{path}")
                 .header("X-Api-Key", getToken())
                 .routeParam("path", ORDERS_PATH)
                 .queryString("ClientId", clientId)
@@ -198,14 +161,7 @@ public class RestClient extends BaseClient {
                 .asObject(CancelOrderResultWebResponse.class)
                 .getBody();
 
-        if (!response.error().code().equals("SUCCESS")) {
-            switch (response.error().code()) {
-                case "UNAUTHENTICATED" -> throw new IllegalArgumentException(response.error().message());
-                default -> throw new IllegalStateException("Unexpected value: " + response.error().code());
-            }
-        } else {
-            return response.data().transactionId();
-        }
+        return ((CancelOrderResult) validateResponse(response)).transactionId();
     }
 
     /**
@@ -224,7 +180,7 @@ public class RestClient extends BaseClient {
         if (clientId.isEmpty() && (!includeMatched && !includeCanceled && !includeActive))
             throw new IllegalArgumentException("client ID not set or all bool parameters are incorrect");
 
-        GetOrdersResultWebResponse response = Unirest.get("{path}")
+        Response<GetOrdersResultWebResponse> response = Unirest.get("{path}")
                 .header("X-Api-Key", getToken())
                 .routeParam("path", ORDERS_PATH)
                 .queryString("ClientId", clientId)
@@ -234,14 +190,7 @@ public class RestClient extends BaseClient {
                 .asObject(GetOrdersResultWebResponse.class)
                 .getBody();
 
-        if (!response.error().code().equals("SUCCESS")) {
-            switch (response.error().code()) {
-                case "UNAUTHENTICATED" -> throw new IllegalArgumentException(response.error().message());
-                default -> throw new IllegalStateException("Unexpected value: " + response.error().code());
-            }
-        } else {
-            return response.data().orders();
-        }
+        return ((GetOrdersResult) validateResponse(response)).orders();
     }
 
     /**
@@ -262,7 +211,7 @@ public class RestClient extends BaseClient {
         if (clientId.isEmpty() && (!includeCurrencies && !includeMoney && !includePositions && !includeMaxBuySell))
             throw new IllegalArgumentException("client ID not set or all bool parameters are incorrect");
 
-        GetPortfolioResultWebResponse response = Unirest.get("{path}")
+        Response<GetPortfolioResultWebResponse> response = Unirest.get("{path}")
                 .header("X-Api-Key", getToken())
                 .routeParam("path", PORTFOLIO_PATH)
                 .queryString("ClientId", clientId)
@@ -273,15 +222,7 @@ public class RestClient extends BaseClient {
                 .asObject(GetPortfolioResultWebResponse.class)
                 .getBody();
 
-        if (!response.error().code().equals("SUCCESS")) {
-            switch (response.error().code()) {
-                case "UNAUTHENTICATED" -> throw new IllegalArgumentException(response.error().message());
-                default -> throw new IllegalStateException("Unexpected value: " + response.error().code());
-            }
-        } else {
-            return response.data();
-        }
-
+        return validateResponse(response);
     }
 
     /**
@@ -295,22 +236,14 @@ public class RestClient extends BaseClient {
         if (request == null)
             throw new IllegalArgumentException("order is null");
 
-        GetSecuritiesResultWebResponse response = Unirest.get("{path}")
+        Response<GetSecuritiesResultWebResponse> response = Unirest.get("{path}")
                 .header("X-Api-Key", getToken())
                 .routeParam("path", SECURITIES_PATH)
                 .queryString("request", request)
                 .asObject(GetSecuritiesResultWebResponse.class)
                 .getBody();
 
-        if (!response.error().code().equals("SUCCESS")) {
-            switch (response.error().code()) {
-                case "UNAUTHENTICATED" -> throw new IllegalArgumentException(response.error().message());
-                default -> throw new IllegalStateException("Unexpected value: " + response.error().code());
-            }
-        } else {
-            return response.data().securities();
-        }
-
+        return ((GetSecuritiesResult) validateResponse(response)).securities();
     }
 
     /**
@@ -323,22 +256,14 @@ public class RestClient extends BaseClient {
         if (request == null)
             throw new IllegalArgumentException("Stop order is null");
 
-        NewStopResultWebResponse response = Unirest.post("{path}")
+        Response<NewStopResultWebResponse> response = Unirest.post("{path}")
                 .header("X-Api-Key", getToken())
                 .routeParam("path", STOPS_PATH)
                 .body(request)
                 .asObject(NewStopResultWebResponse.class)
                 .getBody();
 
-        if (!response.error().code().equals("SUCCESS")) {
-            switch (response.error().code()) {
-                case "UNAUTHENTICATED" -> throw new IllegalArgumentException(response.error().message());
-                default -> throw new IllegalStateException("Unexpected value: " + response.error().code());
-            }
-        } else {
-            return response.data();
-        }
-
+        return validateResponse(response);
     }
 
     /**
@@ -357,24 +282,22 @@ public class RestClient extends BaseClient {
         if (clientId.isEmpty() && (!includeExecuted && !includeCanceled && !includeActive))
             throw new IllegalArgumentException("order must be set");
 
-        GetStopsResultWebResponse response = Unirest.get("{path}")
-                .header("X-Api-Key", getToken())
-                .routeParam("path", STOPS_PATH)
-                .queryString("ClientId", clientId)
-                .queryString("IncludeExecuted", includeExecuted)
-                .queryString("IncludeCanceled", includeCanceled)
-                .queryString("IncludeActive", includeActive)
-                .asObject(GetStopsResultWebResponse.class)
-                .getBody();
-
-        if (!response.error().code().equals("SUCCESS")) {
-            switch (response.error().code()) {
-                case "UNAUTHENTICATED" -> throw new IllegalArgumentException(response.error().message());
-                default -> throw new IllegalStateException("Unexpected value: " + response.error().code());
-            }
-        } else {
-            return response.data().stops();
+        Response<GetStopsResultWebResponse> response;
+        try {
+            response = Unirest.get("{path}")
+                    .header("X-Api-Key", getToken())
+                    .routeParam("path", STOPS_PATH)
+                    .queryString("ClientId", clientId)
+                    .queryString("IncludeExecuted", includeExecuted)
+                    .queryString("IncludeCanceled", includeCanceled)
+                    .queryString("IncludeActive", includeActive)
+                    .asObject(GetStopsResultWebResponse.class)
+                    .getBody();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
         }
+
+        return ((GetStopsResult) validateResponse(response)).stops();
     }
 
     /**
@@ -383,26 +306,37 @@ public class RestClient extends BaseClient {
      * @param stopId - идентификатор отменяемой стоп-заявки.
      * @return идентификатор отменяемой стоп-заявки
      */
-    public int deleteStop(String clientId, int stopId) {
+    public int deleteStopOrder(String clientId, int stopId) {
 
         if (clientId.isEmpty() || stopId == 0)
             throw new IllegalArgumentException("arguments must be set");
 
-        CancelStopResultWebResponse response = Unirest.delete("{path}")
-                .header("X-Api-Key", getToken())
-                .routeParam("path", STOPS_PATH)
-                .queryString("ClientId", clientId)
-                .queryString("StopId", stopId)
-                .asObject(CancelStopResultWebResponse.class)
-                .getBody();
+        Response<CancelStopResultWebResponse> response;
 
+        try {
+            response = Unirest.delete("{path}")
+                    .header("X-Api-Key", getToken())
+                    .routeParam("path", STOPS_PATH)
+                    .queryString("ClientId", clientId)
+                    .queryString("StopId", stopId)
+                    .asObject(CancelStopResultWebResponse.class)
+                    .getBody();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+
+        return ((CancelStopResult) validateResponse(response)).stopId();
+    }
+
+    public <T extends Result<?>, P extends Response<?>> T validateResponse(P response) {
         if (!response.error().code().equals("SUCCESS")) {
             switch (response.error().code()) {
                 case "UNAUTHENTICATED" -> throw new IllegalArgumentException(response.error().message());
+                case "TOO_MANY_REQUESTS" -> throw new IllegalStateException(response.error().message());
                 default -> throw new IllegalStateException("Unexpected value: " + response.error().code());
             }
         } else {
-            return response.data().stopId();
+            return (T) response.data();
         }
     }
 

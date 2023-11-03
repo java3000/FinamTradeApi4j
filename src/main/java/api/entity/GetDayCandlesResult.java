@@ -5,5 +5,5 @@ package api.entity;
  *
  * @param candles Список свечей.
  */
-public record GetDayCandlesResult(DayCandle[] candles){
+public record GetDayCandlesResult(DayCandle[] candles) implements Result<GetDayCandlesResult> {
 }

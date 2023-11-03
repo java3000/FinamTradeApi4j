@@ -7,5 +7,6 @@ package api.entity;
  *                     или определения номера заявки в сервисе событий.
  * @param securityCode Тикер инструмента.
  */
-public record NewOrderResult(String clientId, int transactionId, String securityCode) {
+public record NewOrderResult(String clientId, int transactionId, String securityCode)
+        implements Result<NewOrderResult> {
 }

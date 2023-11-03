@@ -24,5 +24,5 @@ public record GetPortfolioResult(String clientId,
                                  double balance,
                                  List<PositionRow> positions,
                                  List<CurrencyRow> currencies,
-                                 List<MoneyRow> money) {
+                                 List<MoneyRow> money) implements Result<GetPortfolioResult> {
 }
