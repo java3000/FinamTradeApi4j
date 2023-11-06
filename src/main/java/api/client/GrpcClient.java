@@ -2,7 +2,9 @@ package api.client;
 
 import api.client.grpc.controller.GrpcController;
 import com.google.protobuf.BlockingRpcChannel;
+import com.google.protobuf.DoubleValue;
 import com.google.protobuf.ServiceException;
+import com.google.protobuf.Timestamp;
 import io.grpc.ManagedChannelBuilder;
 
 import java.util.List;
@@ -23,60 +25,102 @@ public class GrpcClient extends BaseClient {
         channel = (BlockingRpcChannel) channelBuilder.build();
     }
 
-    public List<Sheme.DayCandle> getDayCandles() throws ServiceException {
+    public List<Sheme.DayCandle> getDayCandles(String securityBoard, String ticker, int timeframe) throws ServiceException {
         var blockingStub = Sheme.Candles.newBlockingStub(channel);
         Sheme.GetDayCandlesResult result = blockingStub.getDayCandles(new GrpcController(),
-                Sheme.GetDayCandlesRequest.newBuilder().build());
+                Sheme.GetDayCandlesRequest
+                        .newBuilder()
+                        .setSecurityBoard(securityBoard)
+                        .setSecurityCode(ticker)
+                        .setTimeFrameValue(timeframe)
+                        .build());
 
         return result.getCandlesList();
     }
 
-    //todo create daycandles func with parameters. if possible
+    public List<Sheme.IntradayCandle> getIntradayCandles(Sheme.IntradayCandleInterval interval,
+                                                         String securityBoard,
+                                                         String ticker,
+                                                         int timeframe) throws ServiceException {
 
-    public List<Sheme.IntradayCandle> getIntradayCandles() throws ServiceException {
         var blockingStub = Sheme.Candles.newBlockingStub(channel);
         Sheme.GetIntradayCandlesResult result = blockingStub.getIntradayCandles(new GrpcController(),
-                Sheme.GetIntradayCandlesRequest.newBuilder().build());
+                Sheme.GetIntradayCandlesRequest
+                        .newBuilder()
+                        .setInterval(interval)
+                        .setSecurityBoard(securityBoard)
+                        .setSecurityCode(ticker)
+                        .setTimeFrameValue(timeframe)
+                        .build());
 
         return result.getCandlesList();
     }
 
-    //todo create intradaycandles func with parameters. if possible
-    public int setOrder() throws ServiceException {
+    //todo add other method with builders
+    public int setOrder(String clientId,
+                        int buySellValue,
+                        Sheme.OrderCondition orderCondition,
+                        DoubleValue price,
+                        int quantity,
+                        String securityBoard,
+                        String ticker,
+                        boolean useCredit,
+                        Sheme.OrderValidBefore validBeforeValue) throws ServiceException {
         var stub = Sheme.Orders.newBlockingStub(channel);
 
-        //todo add parameters to request
-        var result = stub.newOrder(new GrpcController(), Sheme.NewOrderRequest.getDefaultInstance().toBuilder().build());
+        var result = stub.newOrder(new GrpcController(), Sheme.NewOrderRequest
+                .newBuilder()
+                .setClientId(clientId)
+                .setBuySellValue(buySellValue)
+                .setCondition(orderCondition)
+                .setPrice(price)
+                .setQuantity(quantity)
+                .setSecurityBoard(securityBoard)
+                .setSecurityCode(ticker)
+                .setUseCredit(useCredit)
+                .setValidBefore(validBeforeValue)
+                .build());
 
         return result.getTransactionId();
     }
 
-    //==============================
-
-    public int cancelOrder() throws ServiceException {
+    public int cancelOrder(String clientId, int orderId) throws ServiceException {
         var stub = Sheme.Orders.newBlockingStub(channel);
 
-        //todo add parameters to request
-        var result = stub.cancelOrder(new GrpcController(), Sheme.CancelOrderRequest.getDefaultInstance().toBuilder().build());
+        var result = stub.cancelOrder(new GrpcController(), Sheme.CancelOrderRequest
+                .newBuilder()
+                .setClientId(clientId)
+                .setTransactionId(orderId)
+                .build());
 
         return result.getTransactionId();
     }
 
     // getOrderList
-    public List<Sheme.Order> getOrders() throws ServiceException {
+    public List<Sheme.Order> getOrders(String clientId,
+                                       boolean includeActive,
+                                       boolean includeCanceled,
+                                       boolean includeMatched) throws ServiceException {
         var stub = Sheme.Orders.newBlockingStub(channel);
 
-        //todo add parameters to request
-        var result = stub.getOrders(new GrpcController(), Sheme.GetOrdersRequest.getDefaultInstance().toBuilder().build());
+        var result = stub.getOrders(new GrpcController(), Sheme.GetOrdersRequest
+                .newBuilder()
+                .setClientId(clientId)
+                .setIncludeActive(includeActive)
+                .setIncludeCanceled(includeCanceled)
+                .setIncludeMatched(includeMatched)
+                .build());
 
         return result.getOrdersList();
     }
 
-    public Sheme.PortfolioContent getPortfolio() throws ServiceException {
+    public Sheme.PortfolioContent getPortfolio(String clientId) throws ServiceException {
         var stub = Sheme.Portfolios.newBlockingStub(channel);
 
-        //todo add parameters to request
-        var result = stub.getPortfolio(new GrpcController(), Sheme.GetPortfolioRequest.getDefaultInstance().toBuilder().build());
+        var result = stub.getPortfolio(new GrpcController(), Sheme.GetPortfolioRequest
+                .newBuilder()
+                .setClientId(clientId)
+                .build());
 
         return result.getContent();
     }
@@ -84,35 +128,58 @@ public class GrpcClient extends BaseClient {
     public List<Sheme.Security> getSecurities() throws ServiceException {
         var stub = Sheme.Securities.newBlockingStub(channel);
 
-        //todo add parameters to request
         var result = stub.getSecurities(new GrpcController(), Sheme.GetSecuritiesRequest.getDefaultInstance().toBuilder().build());
 
         return result.getSecuritiesList();
     }
 
-    public int setStopOrder() throws ServiceException {
+    //todo add other method with builders
+    public int setStopOrder(int buySellValue,
+                            String clientId,
+                            Timestamp expirationDate,
+                            long orderId,
+                            String boardType,
+                            String ticker,
+                            Sheme.TakeProfit takeProfitValue,
+                            Sheme.StopLoss stopLossValue,
+                            Sheme.OrderValidBefore validBeforeValue) throws ServiceException {
         var stub = Sheme.Stops.newBlockingStub(channel);
 
-        //todo add parameters to request
-        var result = stub.newStop(new GrpcController(), Sheme.NewStopRequest.getDefaultInstance().toBuilder().build());
+        var result = stub.newStop(new GrpcController(), Sheme.NewStopRequest
+                .newBuilder()
+                .setBuySellValue(buySellValue)
+                .setClientId(clientId)
+                .setExpirationDate(expirationDate)
+                .setLinkOrder(orderId)
+                .setSecurityBoard(boardType)
+                .setSecurityCode(ticker)
+                .setTakeProfit(takeProfitValue)
+                .setStopLoss(stopLossValue)
+                .setValidBefore(validBeforeValue)
+                .build());
 
         return result.getStopId();
     }
 
-    public List<Sheme.Stop> getStopOrdersList() throws ServiceException {
+    public List<Sheme.Stop> getStopOrdersList(String clientId) throws ServiceException {
         var stub = Sheme.Stops.newBlockingStub(channel);
 
-        //todo add parameters to request
-        var result = stub.getStops(new GrpcController(), Sheme.GetStopsRequest.getDefaultInstance().toBuilder().build());
+        var result = stub.getStops(new GrpcController(), Sheme.GetStopsRequest
+                .newBuilder()
+                .setClientId(clientId)
+                .build());
 
         return result.getStopsList();
     }
 
-    public int deleteStopOrder() throws ServiceException {
+    public int deleteStopOrder(String clientId, int stopId) throws ServiceException {
         var stub = Sheme.Stops.newBlockingStub(channel);
 
-        //todo add parameters to request
-        var result = stub.cancelStop(new GrpcController(), Sheme.CancelStopRequest.getDefaultInstance().toBuilder().build());
+        var result = stub.cancelStop(new GrpcController(), Sheme.CancelStopRequest
+                .newBuilder()
+                .setClientId(clientId)
+                .setStopId(stopId).
+                build());
 
         return result.getStopId();
     }
